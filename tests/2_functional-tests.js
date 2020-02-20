@@ -30,7 +30,7 @@ suite('Functional Tests', function() {
 
   suite('API ROUTING FOR /api/threads/:board', () => {
     
-    suite('POST', function() {
+    suite('POST',() => {
       test('Post a new thread', (done) => {
         chai.request(server)
             .post('/api/threads/test')
@@ -43,7 +43,7 @@ suite('Functional Tests', function() {
       
     })
     
-    suite('GET', function() {
+    suite('GET', () => {
       test('Get an array of 10 most recent bumped threads with only the 3 most recent replies', (done) => {
         chai.request(server)
             .get('/api/threads/test')
@@ -52,6 +52,8 @@ suite('Functional Tests', function() {
               assert.isArray(res.body)
               assert.isBelow(res.body.length, 11)
               assert.isBelow(res.body[0].replies.length, 4)
+              assert.notProperty(res.body[0], 'reported')
+              assert.notProperty(res.body[0], 'delete_password')
               //Grab ID
               testThreadID = res.body[0]._id
               done()
@@ -59,7 +61,7 @@ suite('Functional Tests', function() {
       })
     });
     
-    suite('PUT', function() {
+    suite('PUT', () => {
       test('Report a thread', (done) => {
         chai.request(server)
             .put('/api/threads/test')
@@ -72,7 +74,7 @@ suite('Functional Tests', function() {
       })
     })
     
-    suite('DELETE', function() {
+    suite('DELETE', () => {
       test('Delete a thread', (done) => {
         chai.request(server)
             .delete('/api/threads/test')
@@ -87,12 +89,13 @@ suite('Functional Tests', function() {
 
   });
   
-  suite('API ROUTING FOR /api/replies/:board', function() {
+  suite('API ROUTING FOR /api/replies/:board', () => {
     //ID for testing.
     let testThreadID
+    let testReplyID
 
     //Thread was deleted in previous test, so create a new one first.
-    suite('POST', function() {
+    suite('POST', () => {
       test('Post a new thread', (done) => {
         chai.request(server)
             .post('/api/threads/test')
@@ -118,7 +121,8 @@ suite('Functional Tests', function() {
       })
     })
     
-    suite('POST', function() {
+    //Continue with reply tests.
+    suite('POST', () => {
       test('Reply to a thread', (done) => {
         chai.request(server)
         .post('/api/replies/test')
@@ -130,27 +134,50 @@ suite('Functional Tests', function() {
       })
     })
     
-    suite('GET', function() {
+    suite('GET', () => {
       test('Get entire thread with all replies', (done) => {
         chai.request(server)
-        .get(`/api/replies/test?thread_id=testThreadID`)
-        //.query({thread_id: testThreadID})
+        .get('/api/replies/test?thread_id=' + testThreadID)
         .end((err, res) => {
           assert.equal(res.status, 200)
-          assert.isArray(res.body.replies)
+          assert.notProperty(res.body[0], 'reported')
+          assert.notProperty(res.body[0], 'delete_password')
+          assert.isArray(res.body[0].thread[0].replies)
+          assert.notProperty(res.body[0].thread[0].replies[0], 'reported')
+          assert.notProperty(res.body[0].thread[0].replies[0], 'delete_password')
+          //Grab reply id
+          testReplyID = res.body[0].thread[0].replies[0]._id
           done()
         })
       })
-    });
+    })
     
-    suite('PUT', function() {
-      
-    });
+    suite('PUT', () => {
+      test('Report a reply', (done) => {
+        chai.request(server)
+            .put('/api/replies/test')
+            .send({board: 'test', thread_id: testThreadID, reply_id: testReplyID})
+            .end((err, res) => {
+              assert.equal(res.status, 200)
+              assert.equal(res.text, 'success')
+              done()
+            })
+      })
+    })
     
-    suite('DELETE', function() {
-      
-    });
+    suite('DELETE', () => {
+      test('Delete a reply', (done) => {
+        chai.request(server)
+            .delete('/api/replies/test')
+            .send({board: 'test', thread_id: testThreadID, reply_id: testReplyID, delete_password: 'password'})
+            .end((err, res) => {
+              assert.equal(res.status, 200)
+              assert.equal(res.text, 'success')
+              done()
+            })
+      })
+    })
     
-  });
+  })
 
-});
+})

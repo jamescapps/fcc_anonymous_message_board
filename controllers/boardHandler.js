@@ -45,12 +45,15 @@ class BoardHandler {
             const data = []
 
             Board.find({"board": board}, (err, result) => {
-                const sortedThreads = (result[0].thread).sort((a, b) => b.bumped_on - a.bumped_on)
+                if (result.length < 1) {
+                    res.send('incorrect input')
+                    return
+                } else {
+                    const sortedThreads = (result[0].thread).sort((a, b) => b.bumped_on - a.bumped_on)
                 
                 if (sortedThreads.length > 10) {
                     sortedThreads.length = 10
                 }
-
                 sortedThreads.forEach((item) => {
                     item.replies.reverse()
                     if (item.replies.length > 3) {
@@ -63,11 +66,34 @@ class BoardHandler {
                         x.reported = undefined
                         x.delete_password = undefined
                     })
-
                     data.push(item)
                 })
                 res.json(data)
+                } 
             })
+        }
+
+        this.getThread = (req, res) => {
+            const { thread_id } = req.query
+
+            Board.find({"thread._id": thread_id}, (err, result) => {
+                if (!result) {
+                    res.send('incorrect input')
+                } else {
+                    result[0].thread.forEach((item) => {
+                        item.reported = undefined
+                        item.delete_password = undefined
+    
+                        item.replies.forEach((x) => {
+                            x.reported = undefined
+                            x.delete_password = undefined
+                        })
+                    })
+                    res.send(result)
+                    return
+                }
+            })
+ 
         }
 
         this.deleteThread = (req, res) => {
@@ -80,7 +106,6 @@ class BoardHandler {
                     res.send('no board found')
                     return
                 }
-
                 result[0].thread.forEach((item) => {
                     if (item._id == thread_id) {
                         if (item.delete_password === delete_password) {
@@ -113,7 +138,6 @@ class BoardHandler {
                     res.send('no board found')
                     return
                 }
-
                 result[0].thread.forEach((item) => {
                     if (item._id == thread_id) {
                         item.replies.forEach((x) => {
@@ -148,7 +172,6 @@ class BoardHandler {
                     res.send('no board found')
                     return
                 }
-
                 result[0].thread.forEach((item) => {
                     if (item._id == thread_id) {
                         item.reported = true
@@ -173,12 +196,11 @@ class BoardHandler {
                     res.send('no board found')
                     return
                 }
-
                 result[0].thread.forEach((item) => {
                     if (item._id == thread_id) {
                         item.replies.forEach((x) => {
                             if (x._id == reply_id) {
-                                reportResult = 'succss'
+                                reportResult = 'success'
                                 x.reported = true
                                 result[0].save()
                             }

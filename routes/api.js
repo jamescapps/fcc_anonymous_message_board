@@ -1,10 +1,9 @@
 'use strict'
 
-var expect = require('chai').expect;
-var BoardHandler = require('../controllers/boardHandler')
+const BoardHandler = require('../controllers/boardHandler')
 
-module.exports = function (app) {
-  var boardHandler = new BoardHandler()
+module.exports = (app) => {
+  const boardHandler = new BoardHandler()
   
   app.route('/api/threads/:board')
      .post(boardHandler.postThread)
@@ -14,6 +13,7 @@ module.exports = function (app) {
 
   app.route('/api/replies/:board')
      .post(boardHandler.replyThread)
+     .get(boardHandler.getThread)
      .delete(boardHandler.deleteReply)
      .put(boardHandler.reportReply)
 }
